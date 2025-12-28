@@ -30,6 +30,7 @@ const DATA_DIR = path.join(app.getPath('userData'), 'comium-data');
 const STATE_FILE = path.join(DATA_DIR, 'state.json');
 const DEFAULT_SEARCH_ENGINE = 'https://www.google.com/search?q=';
 const DEFAULT_HOME_PAGE = 'about:newtab';
+const TOOLBAR_HEIGHT = 90; // Height of the browser toolbar in pixels
 
 // Global state
 let mainWindow: BrowserWindow | null = null;
@@ -346,13 +347,12 @@ function updateViewBounds(): void {
   if (!view) return;
   
   const bounds = mainWindow.getBounds();
-  const toolbarHeight = 90; // Height of the toolbar
   
   view.setBounds({
     x: 0,
-    y: toolbarHeight,
+    y: TOOLBAR_HEIGHT,
     width: bounds.width,
-    height: bounds.height - toolbarHeight
+    height: bounds.height - TOOLBAR_HEIGHT
   });
 }
 
@@ -634,15 +634,9 @@ function setupIPC(): void {
 
 // App event handlers
 app.whenReady().then(() => {
-  // Set up content security policy
-  session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
-    callback({
-      responseHeaders: {
-        ...details.responseHeaders,
-        'Content-Security-Policy': ["default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob: https: http:"]
-      }
-    });
-  });
+  // Note: We don't override CSP for web content in BrowserViews
+  // as that would interfere with websites' own security policies.
+  // The main renderer window uses CSP defined in the HTML meta tag.
   
   setupIPC();
   createWindow();
