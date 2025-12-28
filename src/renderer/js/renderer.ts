@@ -222,6 +222,15 @@ function setupIPCListeners(): void {
     bookmarks = newBookmarks;
     renderBookmarks();
   });
+  
+  // Listen for menu-triggered actions
+  window.comiumAPI.onToggleFindBar(() => {
+    toggleFindBar();
+  });
+  
+  window.comiumAPI.onFocusAddressBar(() => {
+    addressInput.focus();
+  });
 }
 
 // Create tab element

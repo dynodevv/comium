@@ -99,6 +99,14 @@ contextBridge.exposeInMainWorld('comiumAPI', {
   
   onZoomChanged: (callback: (info: { zoom: number }) => void) => {
     ipcRenderer.on('zoom-changed', (_event, info) => callback(info));
+  },
+  
+  onToggleFindBar: (callback: () => void) => {
+    ipcRenderer.on('toggle-find-bar', () => callback());
+  },
+  
+  onFocusAddressBar: (callback: () => void) => {
+    ipcRenderer.on('focus-address-bar', () => callback());
   }
 });
 
@@ -132,6 +140,8 @@ declare global {
       onNavigationState: (callback: (state: NavigationState) => void) => void;
       onBookmarksUpdated: (callback: (bookmarks: Bookmark[]) => void) => void;
       onZoomChanged: (callback: (info: { zoom: number }) => void) => void;
+      onToggleFindBar: (callback: () => void) => void;
+      onFocusAddressBar: (callback: () => void) => void;
     };
   }
 }

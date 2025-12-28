@@ -527,8 +527,145 @@ function createWindow(): void {
 
 // Register global shortcuts
 function registerShortcuts(): void {
-  // Note: We use accelerators in IPC handlers instead of global shortcuts
-  // for better cross-platform compatibility
+  const isMac = process.platform === 'darwin';
+  
+  const template: Electron.MenuItemConstructorOptions[] = [
+    // App Menu (macOS only)
+    ...(isMac ? [{
+      label: app.name,
+      submenu: [
+        { role: 'about' as const },
+        { type: 'separator' as const },
+        { role: 'services' as const },
+        { type: 'separator' as const },
+        { role: 'hide' as const },
+        { role: 'hideOthers' as const },
+        { role: 'unhide' as const },
+        { type: 'separator' as const },
+        { role: 'quit' as const }
+      ]
+    }] : []),
+    // File Menu
+    {
+      label: 'File',
+      submenu: [
+        {
+          label: 'New Tab',
+          accelerator: 'CmdOrCtrl+T',
+          click: () => {
+            const tabId = createTab();
+            switchToTab(tabId);
+          }
+        },
+        {
+          label: 'Close Tab',
+          accelerator: 'CmdOrCtrl+W',
+          click: () => {
+            if (activeTabId !== null) {
+              closeTab(activeTabId);
+            }
+          }
+        },
+        { type: 'separator' },
+        isMac ? { role: 'close' as const } : { role: 'quit' as const }
+      ]
+    },
+    // Edit Menu
+    {
+      label: 'Edit',
+      submenu: [
+        { role: 'undo' as const },
+        { role: 'redo' as const },
+        { type: 'separator' as const },
+        { role: 'cut' as const },
+        { role: 'copy' as const },
+        { role: 'paste' as const },
+        { role: 'selectAll' as const },
+        { type: 'separator' as const },
+        {
+          label: 'Find',
+          accelerator: 'CmdOrCtrl+F',
+          click: () => {
+            mainWindow?.webContents.send('toggle-find-bar');
+          }
+        }
+      ]
+    },
+    // View Menu
+    {
+      label: 'View',
+      submenu: [
+        {
+          label: 'Reload',
+          accelerator: 'CmdOrCtrl+R',
+          click: () => navigate('reload')
+        },
+        { type: 'separator' as const },
+        {
+          label: 'Zoom In',
+          accelerator: 'CmdOrCtrl+=',
+          click: () => setZoom('in')
+        },
+        {
+          label: 'Zoom Out',
+          accelerator: 'CmdOrCtrl+-',
+          click: () => setZoom('out')
+        },
+        {
+          label: 'Reset Zoom',
+          accelerator: 'CmdOrCtrl+0',
+          click: () => setZoom('reset')
+        },
+        { type: 'separator' as const },
+        {
+          label: 'Toggle Developer Tools',
+          accelerator: isMac ? 'Alt+Cmd+I' : 'F12',
+          click: () => toggleDevTools()
+        }
+      ]
+    },
+    // Navigate Menu
+    {
+      label: 'Navigate',
+      submenu: [
+        {
+          label: 'Back',
+          accelerator: 'Alt+Left',
+          click: () => navigate('back')
+        },
+        {
+          label: 'Forward',
+          accelerator: 'Alt+Right',
+          click: () => navigate('forward')
+        },
+        { type: 'separator' as const },
+        {
+          label: 'Focus Address Bar',
+          accelerator: 'CmdOrCtrl+L',
+          click: () => {
+            mainWindow?.webContents.send('focus-address-bar');
+          }
+        }
+      ]
+    },
+    // Window Menu
+    {
+      label: 'Window',
+      submenu: [
+        { role: 'minimize' as const },
+        { role: 'zoom' as const },
+        ...(isMac ? [
+          { type: 'separator' as const },
+          { role: 'front' as const }
+        ] : [
+          { role: 'close' as const }
+        ])
+      ]
+    }
+  ];
+  
+  const menu = Menu.buildFromTemplate(template);
+  Menu.setApplicationMenu(menu);
 }
 
 // Setup IPC handlers
@@ -638,6 +775,7 @@ app.whenReady().then(() => {
   // as that would interfere with websites' own security policies.
   // The main renderer window uses CSP defined in the HTML meta tag.
   
+  registerShortcuts();
   setupIPC();
   createWindow();
   
