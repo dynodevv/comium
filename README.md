@@ -164,7 +164,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 Planned features for future releases:
 
 - [ ] **Settings Page** - Customize browser behavior, appearance, and privacy settings
-- [ ] **History** - Browse and search your browsing history
+- [x] **History** - Browse and search your browsing history (Ctrl/Cmd+H)
 - [ ] **Extensions Support** - Basic extension support
 - [ ] **Multiple Windows** - Open multiple browser windows
 - [ ] **Private Browsing** - Incognito/private browsing mode

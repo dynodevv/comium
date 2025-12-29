@@ -16,6 +16,14 @@ interface Bookmark {
   createdAt: number;
 }
 
+interface HistoryEntry {
+  id: string;
+  url: string;
+  title: string;
+  favicon?: string;
+  visitedAt: number;
+}
+
 interface NavigationState {
   canGoBack: boolean;
   canGoForward: boolean;
@@ -44,6 +52,11 @@ contextBridge.exposeInMainWorld('comiumAPI', {
   removeBookmark: (id: string) => ipcRenderer.invoke('remove-bookmark', id),
   getBookmarks: () => ipcRenderer.invoke('get-bookmarks'),
   isBookmarked: (url: string) => ipcRenderer.invoke('is-bookmarked', url),
+  
+  // History
+  getHistory: () => ipcRenderer.invoke('get-history'),
+  searchHistory: (query: string) => ipcRenderer.invoke('search-history', query),
+  clearHistory: () => ipcRenderer.invoke('clear-history'),
   
   // Zoom
   zoom: (direction: 'in' | 'out' | 'reset') => ipcRenderer.send('zoom', direction),
@@ -123,6 +136,9 @@ declare global {
       removeBookmark: (id: string) => Promise<boolean>;
       getBookmarks: () => Promise<Bookmark[]>;
       isBookmarked: (url: string) => Promise<boolean>;
+      getHistory: () => Promise<HistoryEntry[]>;
+      searchHistory: (query: string) => Promise<HistoryEntry[]>;
+      clearHistory: () => Promise<boolean>;
       zoom: (direction: 'in' | 'out' | 'reset') => void;
       findInPage: (text: string, options?: FindOptions) => void;
       stopFindInPage: () => void;
@@ -145,3 +161,11 @@ declare global {
     };
   }
 }
+
+// Set up Ctrl+scroll wheel zoom handler for web content
+document.addEventListener('wheel', (e: WheelEvent) => {
+  if (e.ctrlKey) {
+    e.preventDefault();
+    ipcRenderer.send('zoom', e.deltaY < 0 ? 'in' : 'out');
+  }
+}, { passive: false });

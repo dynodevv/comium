@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>History - Comium</title>
+  <style>
+    :root {
+      --bg-primary: #1a1a2e;
+      --bg-secondary: #16213e;
+      --bg-tertiary: #0f0f1a;
+      --text-primary: #ffffff;
+      --text-secondary: rgba(255, 255, 255, 0.7);
+      --text-muted: rgba(255, 255, 255, 0.4);
+      --accent-color: #6366f1;
+      --accent-hover: #818cf8;
+      --border-color: rgba(255, 255, 255, 0.1);
+      --danger-color: #ef4444;
+    }
+    
+    @media (prefers-color-scheme: light) {
+      :root {
+        --bg-primary: #f8fafc;
+        --bg-secondary: #ffffff;
+        --bg-tertiary: #e2e8f0;
+        --text-primary: #0f172a;
+        --text-secondary: rgba(15, 23, 42, 0.7);
+        --text-muted: rgba(15, 23, 42, 0.4);
+        --border-color: rgba(0, 0, 0, 0.1);
+      }
+    }
+    
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    html, body {
+      height: 100%;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      padding: 40px;
+      -webkit-font-smoothing: antialiased;
+    }
+    
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 30px;
+    }
+    
+    h1 {
+      font-size: 32px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    
+    h1 svg {
+      color: var(--accent-color);
+    }
+    
+    .search-bar {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    
+    .search-input {
+      flex: 1;
+      padding: 12px 16px;
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      background: var(--bg-secondary);
+      color: var(--text-primary);
+      font-size: 14px;
+      outline: none;
+    }
+    
+    .search-input:focus {
+      border-color: var(--accent-color);
+    }
+    
+    .btn {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 8px;
+      background: var(--accent-color);
+      color: white;
+      font-size: 14px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    
+    .btn:hover {
+      background: var(--accent-hover);
+    }
+    
+    .btn-danger {
+      background: var(--danger-color);
+    }
+    
+    .btn-danger:hover {
+      background: #dc2626;
+    }
+    
+    .history-list {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    
+    .history-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+      background: var(--bg-secondary);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    
+    .history-item:hover {
+      background: var(--bg-tertiary);
+    }
+    
+    .history-favicon {
+      width: 20px;
+      height: 20px;
+      border-radius: 4px;
+      flex-shrink: 0;
+    }
+    
+    .history-info {
+      flex: 1;
+      min-width: 0;
+    }
+    
+    .history-title {
+      font-size: 14px;
+      font-weight: 500;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    
+    .history-url {
+      font-size: 12px;
+      color: var(--text-muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    
+    .history-time {
+      font-size: 12px;
+      color: var(--text-secondary);
+      white-space: nowrap;
+    }
+    
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--text-muted);
+    }
+    
+    .empty-state svg {
+      margin-bottom: 16px;
+      opacity: 0.5;
+    }
+    
+    .date-header {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      padding: 16px 0 8px 0;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"/>
+          <polyline points="12 6 12 12 16 14"/>
+        </svg>
+        History
+      </h1>
+      <button class="btn btn-danger" id="clearHistory">Clear History</button>
+    </div>
+    
+    <div class="search-bar">
+      <input type="text" class="search-input" id="searchInput" placeholder="Search history...">
+    </div>
+    
+    <div class="history-list" id="historyList">
+      <!-- History items will be inserted here -->
+    </div>
+    
+    <div class="empty-state" id="emptyState" style="display: none;">
+      <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <circle cx="12" cy="12" r="10"/>
+        <polyline points="12 6 12 12 16 14"/>
+      </svg>
+      <p>No history yet</p>
+    </div>
+  </div>
+  
+  <script>
+    // Get history from preload API
+    async function loadHistory(query = '') {
+      const historyList = document.getElementById('historyList');
+      const emptyState = document.getElementById('emptyState');
+      
+      try {
+        let history;
+        if (query) {
+          history = await window.comiumAPI.searchHistory(query);
+        } else {
+          history = await window.comiumAPI.getHistory();
+        }
+        
+        if (history.length === 0) {
+          historyList.innerHTML = '';
+          emptyState.style.display = 'block';
+          return;
+        }
+        
+        emptyState.style.display = 'none';
+        
+        // Group by date
+        const grouped = {};
+        history.forEach(entry => {
+          const date = new Date(entry.visitedAt).toLocaleDateString();
+          if (!grouped[date]) {
+            grouped[date] = [];
+          }
+          grouped[date].push(entry);
+        });
+        
+        historyList.innerHTML = '';
+        
+        Object.keys(grouped).forEach(date => {
+          const header = document.createElement('div');
+          header.className = 'date-header';
+          header.textContent = date === new Date().toLocaleDateString() ? 'Today' : 
+                               date === new Date(Date.now() - 86400000).toLocaleDateString() ? 'Yesterday' : date;
+          historyList.appendChild(header);
+          
+          grouped[date].forEach(entry => {
+            const item = document.createElement('div');
+            item.className = 'history-item';
+            
+            const time = new Date(entry.visitedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            
+            // Create elements safely to avoid XSS
+            if (entry.favicon) {
+              const img = document.createElement('img');
+              img.className = 'history-favicon';
+              img.src = entry.favicon;
+              img.onerror = function() { this.style.display = 'none'; };
+              item.appendChild(img);
+            }
+            
+            const info = document.createElement('div');
+            info.className = 'history-info';
+            
+            const title = document.createElement('div');
+            title.className = 'history-title';
+            title.textContent = entry.title;
+            info.appendChild(title);
+            
+            const url = document.createElement('div');
+            url.className = 'history-url';
+            url.textContent = entry.url;
+            info.appendChild(url);
+            
+            item.appendChild(info);
+            
+            const timeDiv = document.createElement('div');
+            timeDiv.className = 'history-time';
+            timeDiv.textContent = time;
+            item.appendChild(timeDiv);
+            
+            item.addEventListener('click', () => {
+              window.comiumAPI.navigateToUrl(entry.url);
+            });
+            
+            historyList.appendChild(item);
+          });
+        });
+      } catch (error) {
+        console.error('Failed to load history:', error);
+      }
+    }
+    
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+    
+    // Search with debounce
+    let searchTimeout;
+    document.getElementById('searchInput').addEventListener('input', (e) => {
+      clearTimeout(searchTimeout);
+      searchTimeout = setTimeout(() => {
+        loadHistory(e.target.value);
+      }, 300);
+    });
+    
+    // Clear history
+    document.getElementById('clearHistory').addEventListener('click', async () => {
+      if (confirm('Are you sure you want to clear all browsing history?')) {
+        await window.comiumAPI.clearHistory();
+        loadHistory();
+      }
+    });
+    
+    // Load history on page load
+    loadHistory();
+  </script>
+</body>
+</html>

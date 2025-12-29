@@ -18,10 +18,19 @@ interface Bookmark {
   createdAt: number;
 }
 
+interface HistoryEntry {
+  id: string;
+  url: string;
+  title: string;
+  favicon?: string;
+  visitedAt: number;
+}
+
 interface AppState {
   tabs: TabInfo[];
   activeTabId: number | null;
   bookmarks: Bookmark[];
+  history: HistoryEntry[];
   zoom: number;
 }
 
@@ -38,7 +47,9 @@ let tabs: Map<number, BrowserView> = new Map();
 let activeTabId: number | null = null;
 let tabCounter = 0;
 let bookmarks: Bookmark[] = [];
+let history: HistoryEntry[] = [];
 let currentZoom = 1.0;
+const MAX_HISTORY_ENTRIES = 1000; // Limit history to prevent excessive memory usage
 
 // Get path to renderer files
 function getRendererPath(file: string): string {
@@ -83,6 +94,7 @@ function saveState(): void {
       tabs: tabInfos,
       activeTabId,
       bookmarks,
+      history,
       zoom: currentZoom
     };
     
@@ -156,6 +168,8 @@ function createTab(url: string = DEFAULT_HOME_PAGE, restoreId?: number): number 
   
   view.webContents.on('page-title-updated', () => {
     updateTabInfo(tabId);
+    // Add to history when title is available (ensures accurate title)
+    addHistoryEntry(view.webContents.getURL(), view.webContents.getTitle());
   });
   
   view.webContents.on('page-favicon-updated', (_event: any, favicons: string[]) => {
@@ -416,6 +430,50 @@ function removeBookmark(id: string): void {
   saveState();
 }
 
+// Add history entry
+function addHistoryEntry(url: string, title: string, favicon?: string): void {
+  // Don't add internal pages to history
+  if (url.startsWith('file://') || url.startsWith('data:') || url === 'about:newtab') {
+    return;
+  }
+  
+  const entry: HistoryEntry = {
+    id: Date.now().toString(36) + Math.random().toString(36).substring(2),
+    url,
+    title: title || url,
+    favicon,
+    visitedAt: Date.now()
+  };
+  
+  // Add to beginning (most recent first)
+  history.unshift(entry);
+  
+  // Limit history size
+  if (history.length > MAX_HISTORY_ENTRIES) {
+    history = history.slice(0, MAX_HISTORY_ENTRIES);
+  }
+}
+
+// Clear history
+function clearHistory(): void {
+  history = [];
+  saveState();
+}
+
+// Get history
+function getHistory(): HistoryEntry[] {
+  return history;
+}
+
+// Search history
+function searchHistory(query: string): HistoryEntry[] {
+  const lowerQuery = query.toLowerCase();
+  return history.filter(entry => 
+    entry.url.toLowerCase().includes(lowerQuery) || 
+    entry.title.toLowerCase().includes(lowerQuery)
+  );
+}
+
 // Zoom
 function setZoom(direction: 'in' | 'out' | 'reset'): void {
   if (activeTabId === null) return;
@@ -500,6 +558,10 @@ function createWindow(): void {
     if (state && state.bookmarks) {
       bookmarks = state.bookmarks;
       mainWindow?.webContents.send('bookmarks-updated', bookmarks);
+    }
+    
+    if (state && state.history) {
+      history = state.history;
     }
     
     if (state && state.zoom) {
@@ -651,6 +713,20 @@ function registerShortcuts(): void {
           click: () => {
             mainWindow?.webContents.send('focus-address-bar');
           }
+        },
+        { type: 'separator' as const },
+        {
+          label: 'History',
+          accelerator: 'CmdOrCtrl+H',
+          click: () => {
+            // Navigate to history page
+            if (activeTabId !== null) {
+              const view = tabs.get(activeTabId);
+              if (view) {
+                view.webContents.loadFile(getRendererPath('history.html'));
+              }
+            }
+          }
         }
       ]
     },
@@ -664,7 +740,8 @@ function registerShortcuts(): void {
           { type: 'separator' as const },
           { role: 'front' as const }
         ] : [
-          { role: 'close' as const }
+          { type: 'separator' as const },
+          { label: 'Close Window', accelerator: 'Alt+F4', role: 'close' as const }
         ])
       ]
     }
@@ -720,6 +797,20 @@ function setupIPC(): void {
     return bookmarks.some(b => b.url === url);
   });
   
+  // History
+  ipcMain.handle('get-history', () => {
+    return getHistory();
+  });
+  
+  ipcMain.handle('search-history', (_event, query: string) => {
+    return searchHistory(query);
+  });
+  
+  ipcMain.handle('clear-history', () => {
+    clearHistory();
+    return true;
+  });
+  
   // Zoom
   ipcMain.on('zoom', (_event, direction: 'in' | 'out' | 'reset') => {
     setZoom(direction);
@@ -767,9 +858,15 @@ function setupIPC(): void {
     const view = tabs.get(activeTabId);
     if (!view) return null;
     
+    let url = view.webContents.getURL();
+    // Convert newtab file URL to about:newtab
+    if (url.includes('newtab.html')) {
+      url = 'about:newtab';
+    }
+    
     return {
       id: activeTabId,
-      url: view.webContents.getURL(),
+      url: url,
       title: view.webContents.getTitle()
     };
   });
