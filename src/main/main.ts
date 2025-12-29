@@ -30,7 +30,7 @@ const DATA_DIR = path.join(app.getPath('userData'), 'comium-data');
 const STATE_FILE = path.join(DATA_DIR, 'state.json');
 const DEFAULT_SEARCH_ENGINE = 'https://www.google.com/search?q=';
 const DEFAULT_HOME_PAGE = 'about:newtab';
-const TOOLBAR_HEIGHT = 90; // Height of the browser toolbar in pixels
+const TOOLBAR_HEIGHT = 124; // Height of the browser toolbar in pixels (title bar + tab bar + toolbar)
 
 // Global state
 let mainWindow: BrowserWindow | null = null;
@@ -567,7 +567,7 @@ function registerShortcuts(): void {
           }
         },
         { type: 'separator' },
-        isMac ? { role: 'close' as const } : { role: 'quit' as const }
+        isMac ? { label: 'Close Window', accelerator: 'CmdOrCtrl+Shift+W', role: 'close' as const } : { role: 'quit' as const }
       ]
     },
     // Edit Menu
@@ -603,8 +603,14 @@ function registerShortcuts(): void {
         { type: 'separator' as const },
         {
           label: 'Zoom In',
-          accelerator: 'CmdOrCtrl+=',
+          accelerator: 'CmdOrCtrl+Shift+=',
           click: () => setZoom('in')
+        },
+        {
+          label: 'Zoom In (Alt)',
+          accelerator: 'CmdOrCtrl+=',
+          click: () => setZoom('in'),
+          visible: false
         },
         {
           label: 'Zoom Out',

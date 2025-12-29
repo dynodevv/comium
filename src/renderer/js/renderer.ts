@@ -120,6 +120,18 @@ function setupEventListeners(): void {
   
   // Keyboard shortcuts
   document.addEventListener('keydown', handleKeyboardShortcuts);
+  
+  // Ctrl+scroll wheel zoom
+  document.addEventListener('wheel', (e: WheelEvent) => {
+    if (e.ctrlKey) {
+      e.preventDefault();
+      if (e.deltaY < 0) {
+        window.comiumAPI.zoom('in');
+      } else if (e.deltaY > 0) {
+        window.comiumAPI.zoom('out');
+      }
+    }
+  }, { passive: false });
 }
 
 // Handle keyboard shortcuts
